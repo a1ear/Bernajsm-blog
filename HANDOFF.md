@@ -3,87 +3,89 @@
 Read this before changing anything. It says what's verified, what isn't, and
 which decisions look wrong until you know why.
 
-## Status: built AND verified against a real, running stack
+## Status: built, deployed, and logged into for real
 
-`npm run typecheck`, `npm run lint`, and `npm run build` all pass clean.
-Beyond that — unlike the point this file originally shipped at — this has
-now actually been run: a local Supabase stack (`npx supabase start`, Docker),
-both migrations applied to a real Postgres, and a full browser walkthrough
-against it. Specifically confirmed working, live, not just by reading code:
+`npm run typecheck`, `npm run lint`, and `npm run build` all pass clean. Well
+beyond that, though — this has actually been run, twice over: once against a
+local Supabase stack during development, and now for real:
 
-- Both migrations apply cleanly to a fresh Postgres (`npm run db:deploy`).
-- **RLS actually blocks anonymous access** — `curl .../rest/v1/posts` with a
-  real `anon` key returns `[]`, exactly as designed.
-- Admin login works end to end (Supabase Auth, real session cookie).
-- **The draft/published split is real**, not just code that looks right: a
-  post saved as Draft does not appear on `/blog`; publishing it makes it
-  appear; the reverse was also checked.
-- The Tiptap editor's full round trip works: typed content → ProseMirror
-  JSON → `Post.bodyJson` → `RichTextRenderer`'s `generateHTML` → correct
-  rendered article on the public page.
-- Cover image upload is a real Supabase Storage round trip: uploaded through
-  the admin form → lands in the `media` bucket via the service-role
-  client → the resulting public URL genuinely serves the file → renders on
-  both the admin preview and the public `/blog` card via `next/image`.
-- A quote published with no attribution correctly falls back to the
-  author's name, and shows as the homepage's featured quote.
-- A social link added in `/bjsm-write/social-links` immediately appears in the
-  public footer (no cache to invalidate — see the `force-dynamic` decision
-  below).
-- Empty states render correctly (`/journal` and the homepage's journal
-  section, before any journal entries existed).
-- **Found and fixed a real mobile bug during this pass**: the homepage hero
-  and the `/about` page were wrapping their above-the-fold content in
-  `<Reveal>` (scroll-triggered, `whileInView`), which never fires for
-  content that's already the first thing in a short viewport — it rendered
-  as invisible on mobile until a scroll that had no reason to happen. Fixed
-  by rendering that content in plain, unanimated `div`s instead; see the
-  comment left in `app/(site)/page.tsx`. Reveal is now only used for content
-  a visitor actually scrolls to.
+- **Live at <https://bernajsm-blog.vercel.app>**, deployed from
+  [github.com/a1ear/Bernajsm-blog](https://github.com/a1ear/Bernajsm-blog),
+  Supabase project `eazxnvrdgejuhyikwpcr`.
+- Both migrations applied to that real Postgres via `prisma migrate deploy`,
+  confirmed empty beforehand (see the wrong-project note below — worth
+  reading).
+- **RLS confirmed blocking anonymous access on the live project** —
+  `curl .../rest/v1/posts` with the real `anon`/publishable key returns `[]`.
+- Both Storage buckets (`media`, `newsletters`) exist on the live project
+  and are public.
+- **The admin account exists and login works** at
+  `/bjsm-write/login` on the live site — created by hand via SQL
+  (`auth.users` + `auth.identities` insert, see the git history of this file
+  for the exact statements if you ever need to create a second one, though
+  this site is deliberately single-admin — see below).
+- Locally, before deployment, a full walkthrough also confirmed: draft posts
+  correctly hidden from `/blog` until published; the Tiptap editor's full
+  round trip (typed content → ProseMirror JSON → `RichTextRenderer` →
+  correct rendered article); cover image upload as a real Supabase Storage
+  round trip (uploaded → public URL → actually serves the file → renders via
+  `next/image`); a quote with no attribution falling back to the author's
+  name; a social link added in admin appearing in the public footer with no
+  redeploy needed; empty states rendering correctly before any content
+  existed.
+- **Found and fixed two real bugs during this process, not just theoretical
+  ones:**
+  1. The homepage hero and the (now-removed) `/about` intro were wrapping
+     above-the-fold content in `<Reveal>` (scroll-triggered `whileInView`),
+     which never fires for content that's already the first thing in a
+     short viewport — invisible on mobile until a scroll that had no reason
+     to happen. Fixed by using plain, unanimated `div`s for that content;
+     `Reveal` is now only used for content a visitor actually scrolls to.
+  2. `prisma.config.ts` used `@prisma/config`'s `env()` helper for
+     `datasource.url`, which throws the instant the config file loads if
+     `DIRECT_URL` is missing — and this file loads for every Prisma CLI
+     call, including `generate` (run from `postinstall` on every
+     `npm install`, before env vars are necessarily present). Broke the
+     Vercel build at the install step. Fixed by reading
+     `process.env.DIRECT_URL` directly instead, verified by running
+     `prisma generate` with `.env.local` removed entirely.
 
-That first pass was done against a **local** Supabase stack (`supabase
-start`), which is ephemeral and has since been discarded along with its
-test post/quote/social-link.
+## The wrong-Supabase-project incident — read this before touching env vars
 
-**The real cloud project is now live and wired up**: `.env.local` points at
-it, both migrations are applied (confirmed via `prisma migrate deploy`
-against a database confirmed empty beforehand — see below), RLS is
-confirmed blocking anonymous access there too (same `curl` check, real
-project), and both Storage buckets (`media`, `newsletters`) exist and are
-public. This was the *second* Supabase project given to me in this
-conversation — the first one, when inspected before touching anything,
-turned out to already contain a different, unrelated app's real data (a
-laundry-service system: customers, orders, payments). Nothing was ever
-written to that one. Always inspect an unfamiliar database before running
-migrations against it; don't assume "empty" from a connection string alone.
+Mid-setup, the user pasted real Supabase credentials twice. The first set
+turned out to belong to a **different, already-populated app** — a
+laundry-service system with real customer/order/payment data — discovered by
+inspecting the database's actual tables *before* running any migration
+against it. Nothing was ever written there. The second set
+(`eazxnvrdgejuhyikwpcr`) checked out genuinely empty and is what's live now.
 
-**Not yet done on the real project:** no admin login exists yet — that's
-the one setup step intentionally left to the user rather than done via API
-(see below), and no real content has been published yet.
+**Lesson embedded in the process, not just this paragraph**: never assume a
+connection string points at an empty/intended database. Query
+`information_schema.tables` (or equivalent) and actually look before running
+`migrate deploy` or anything else mutating.
+
+A second, smaller version of the same class of mistake happened again later
+during admin-account creation via SQL: the user ran the account-creation
+query in what turned out to be the *wrong* Supabase project's SQL Editor
+(confirmed by a `public.profiles` table appearing in a screenshot — a table
+that doesn't exist anywhere in this project's schema). Always confirm the
+project ref in the URL (`supabase.com/dashboard/project/<ref>`) matches
+`eazxnvrdgejuhyikwpcr` before running SQL against "this" project.
 
 ## Open items, in priority order
 
-1. **Create your admin login** — Supabase dashboard for project
-   `eazxnvrdgejuhyikwpcr` → Authentication → Users → Add user → your email +
-   a password of your choosing, tick **Auto Confirm User**. This is the one
-   step deliberately not automated (see AGENTS.md's stance on not creating
-   accounts or handling passwords on the user's behalf) — the account is
-   what lets `npm run dev` / the deployed site's `/bjsm-write/login` work for
-   you. Do this before deploying so you're not locked out of production.
-2. **Real author photo and a real portrait for `/about`.** The user said to
-   leave AI-generated imagery out and supply real photos later — `/about`
-   currently falls back to an initials placeholder (same pattern the
-   original site used for the author photo before this revamp), confirmed
-   rendering correctly in the local walkthrough.
-3. **First real content.** The local walkthrough's test post/quote/social
-   link don't carry over to the real project — write and publish the actual
-   first post, journal entry, quote and newsletter issue once the cloud
-   project exists.
-4. **Decide on backups** (SETUP.md's Backups section) before this holds
+1. **Real author photo.** The user said to leave AI-generated imagery out
+   and supply real photos later — `/about` currently falls back to an
+   initials placeholder, confirmed rendering correctly.
+2. **First real content.** Nothing has been published on the live site yet
+   — write and publish the actual first post, journal entry, quote, and
+   newsletter issue.
+3. **Decide on backups** (SETUP.md's Backups section) before this holds
    content the user would be upset to lose.
-5. **Set `NEXT_PUBLIC_SITE_URL`** before deploying — it currently falls
-   back to `localhost:3000` in the sitemap/robots/OG tags on purpose (see
-   `lib/site-url.ts`), rather than guessing a real domain.
+4. **Set `NEXT_PUBLIC_SITE_URL`** in Vercel to the real production domain —
+   it currently falls back to `localhost:3000` in the sitemap/robots/OG tags
+   on purpose (see `lib/site-url.ts`) rather than guessing.
+5. **Custom domain**, if wanted — currently just the `*.vercel.app` one.
 
 ## Decisions that look wrong until you read why
 
@@ -94,8 +96,7 @@ the one setup step intentionally left to the user rather than done via API
 - **No role/profile table for admin auth.** `lib/auth.ts`'s `requireAdmin()`
   only checks for a valid Supabase session. This looks like a shortcut
   compared to `truckledger`'s `Profile`/`Role` system, but there is exactly
-  one possible logged-in user on this site (the Supabase project has one
-  admin account, created by hand in SETUP.md §8) — a role table would guard
+  one possible logged-in user on this site — a role table would guard
   against a user who structurally cannot exist.
 - **`Post` is one table for both blog posts and journal entries**, split by
   a `type` enum instead of two separate tables/editors. They're identical in
@@ -112,20 +113,28 @@ the one setup step intentionally left to the user rather than done via API
   used to edit it. This is what makes `dangerouslySetInnerHTML` in that one
   component safe: the HTML string it renders was generated from a
   schema-constrained document, not accepted as raw input.
-- **The book-launch content (Hero/Acclaim/Story/AboutAuthor/CTASection)
-  moved from `/` to `/book` rather than being deleted.** It's real,
-  previously-verified copy (real Amazon link, real testimonials) — the
-  revamp added a blog on top of it, it didn't replace it.
+- **There is no dedicated `/book` page.** It existed early on (Hero, a
+  testimonials/Acclaim grid, Story, AboutAuthor, a CTA section — all real,
+  previously-verified copy), then was removed entirely at the user's
+  request as redundant with the homepage's own book teaser and the About
+  page, both of which now link straight to the real Amazon listing. The
+  book's real, non-fabricated copy that's still relevant (the memoir's
+  story, the author's bio) lives on in `lib/content.ts` for those two pages.
+- **The admin route is `/bjsm-write`, not `/admin`.** Renamed at the user's
+  request to cut down on bot/scanner traffic hitting a well-known path — the
+  actual security boundary is still the login itself (Supabase Auth +
+  server-side `requireAdmin()` checks on every mutation), not the URL.
+  `robots.ts` deliberately has no `disallow` entry naming it, since a public
+  robots.txt is the wrong place to announce where the sensitive area lives;
+  the admin layout's `noindex` metadata does that job instead.
 - **A Google Stitch concept design was used for layout/visual reference
   only, not copied verbatim.** The generated mockups included fabricated
   specifics — a real journalist's name attached to an invented review, an
   ISBN, a page count, named booksellers and prices, a Manila mailing
   address, an audiobook sample player, an email-newsletter signup flow.
   None of that shipped. Only the mockups' actual color/type/spacing system
-  (which already matched this project's real palette, since the Stitch
-  prompt was built from `app/globals.css`) and structural layout ideas were
-  reused. All copy on the site is either the site's pre-existing real
-  content or plain, non-fabricated UI labels.
+  and structural layout ideas were reused. All copy on the site is either
+  the site's pre-existing real content or plain, non-fabricated UI labels.
 - **Newsletter is downloadable issues, not an email list.** Explicitly
   chosen over a subscriber/email-sending system — no subscriber PII is
   collected anywhere on this site.
@@ -134,14 +143,6 @@ the one setup step intentionally left to the user rather than done via API
   only, from actions that already called `requireAdmin()` — that's what
   lets the `media`/`newsletters` Storage buckets stay writable with zero
   Storage RLS policies.
-
-## What to verify once the cloud Supabase project exists
-
-Everything in this list was already confirmed once, locally (see Status
-above) — this is about repeating the check against the real project, not
-discovering new behavior: log in, create a draft post, confirm it does
-**not** appear on `/blog`; publish it, confirm it does; confirm the `anon`
-key genuinely can't read draft rows (SETUP.md §7); upload a cover image and
-a newsletter PDF and confirm both render/download correctly; check `/`,
-`/blog`, `/journal`, `/quotes`, `/newsletter`, `/about`, `/book` at
-mobile/tablet/desktop widths.
+- **The author's display name is "Berna JSM" everywhere**, not "Bernadette
+  Magbanua" — changed at the user's request. `site.authorName` is the single
+  source; nothing else hardcodes the old name.

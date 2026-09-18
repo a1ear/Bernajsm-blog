@@ -5,7 +5,7 @@ import { site } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: `Journal — ${site.authorHandle}`,
-  description: "Quiet, unhurried journal entries from Bernadette Magbanua.",
+  description: "Quiet, unhurried journal entries from Berna JSM.",
 };
 
 export default async function JournalPage({

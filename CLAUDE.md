@@ -2,7 +2,7 @@
 
 # Bernajsm-blog
 
-Personal blog and admin CMS for author Bernadette Magbanua ("Berna JSM") —
+Personal blog and admin CMS for author Berna JSM —
 blog posts, journal entries, quotes, downloadable newsletter issues, and the
 existing *Lessons That Matter* book-launch content. Next.js 16 (App Router) ·
 Supabase (Postgres + Auth + Storage) · Prisma 7 · Tailwind v4 · Tiptap.

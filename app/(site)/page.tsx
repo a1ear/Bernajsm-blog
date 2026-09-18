@@ -93,8 +93,8 @@ export default async function HomePage() {
               {story.heading}
             </h2>
             <p className="pretty mt-5 max-w-xl leading-relaxed text-ink-soft">{story.body[0]}</p>
-            <Button href="/book" variant="primary" className="mt-8">
-              Explore the Book →
+            <Button href={site.amazonUrl} variant="primary" className="mt-8">
+              Order the Book →
             </Button>
           </Reveal>
         </div>

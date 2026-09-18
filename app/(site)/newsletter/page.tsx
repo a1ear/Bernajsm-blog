@@ -8,7 +8,7 @@ import { site } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: `Newsletter — ${site.authorHandle}`,
-  description: "Downloadable newsletter issues from Bernadette Magbanua.",
+  description: "Downloadable newsletter issues from Berna JSM.",
 };
 
 function formatDate(date: Date) {

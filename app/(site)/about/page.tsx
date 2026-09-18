@@ -70,10 +70,12 @@ export default async function AboutPage() {
           </div>
 
           <Link
-            href="/book"
+            href={site.amazonUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             className="mt-8 inline-block text-sm text-forest underline decoration-forest/40 decoration-2 underline-offset-4"
           >
-            Read about the book →
+            Order the Book →
           </Link>
         </div>
       </div>

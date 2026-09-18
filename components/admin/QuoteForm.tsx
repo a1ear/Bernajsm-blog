@@ -44,7 +44,7 @@ export function QuoteForm({ mode, quoteId, initial }: QuoteFormProps) {
         <TextArea id="text" rows={3} required value={text} onChange={(e) => setText(e.target.value)} />
       </Field>
 
-      <Field label="Attribution (optional — defaults to Bernadette Magbanua)" htmlFor="attribution">
+      <Field label="Attribution (optional — defaults to Berna JSM)" htmlFor="attribution">
         <TextInput id="attribution" value={attribution} onChange={(e) => setAttribution(e.target.value)} />
       </Field>
 
