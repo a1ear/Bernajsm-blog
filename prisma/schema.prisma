@@ -1,0 +1,117 @@
+// Bernajsm-blog data model.
+//
+// Prisma 7 note: connection URLs are NOT declared here. Migration /
+// introspection URLs live in `prisma.config.ts`; the runtime connection is
+// supplied to `PrismaClient` via the `@prisma/adapter-pg` driver adapter
+// (see `lib/prisma.ts`).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum PostType {
+  BLOG
+  JOURNAL
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+}
+
+// ---------------------------------------------------------------------------
+// Author (site content, not an authorization table — see lib/auth.ts)
+// ---------------------------------------------------------------------------
+
+/// Mirrors the single Supabase `auth.users` row for the site's author. `id`
+/// is the Supabase user id (uuid) -- credentials are owned by Supabase Auth,
+/// so there is deliberately no password column here. This table is read for
+/// the About page and byline display; it is never consulted to decide
+/// whether a request is authorized (see lib/auth.ts for why).
+model Author {
+  id        String   @id @db.Uuid
+  email     String   @unique
+  name      String
+  handle    String?
+  bio       String?
+  photoUrl  String?
+  updatedAt DateTime @updatedAt
+
+  @@map("authors")
+}
+
+// ---------------------------------------------------------------------------
+// Content
+// ---------------------------------------------------------------------------
+
+/// Blog posts and journal entries share this table -- identical shape, only
+/// `type` differs, so there is one editor and one CRUD surface instead of two.
+model Post {
+  id            String        @id @default(uuid()) @db.Uuid
+  type          PostType
+  slug          String        @unique
+  title         String
+  excerpt       String?
+  /// Tiptap ProseMirror JSON, never raw HTML -- see components/admin/Editor.
+  bodyJson      Json
+  coverImageUrl String?
+  coverImageAlt String?
+  status        ContentStatus @default(DRAFT)
+  publishedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([type, status, publishedAt])
+  @@map("posts")
+}
+
+model Quote {
+  id          String        @id @default(uuid()) @db.Uuid
+  text        String
+  /// Null attribution renders as the site author's name.
+  attribution String?
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+
+  @@index([status, publishedAt])
+  @@map("quotes")
+}
+
+model Newsletter {
+  id          String        @id @default(uuid()) @db.Uuid
+  title       String
+  description String?
+  issueDate   DateTime
+  /// Public Supabase Storage URL in the `newsletters` bucket.
+  fileUrl     String
+  fileName    String
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+
+  @@index([status, issueDate])
+  @@map("newsletters")
+}
+
+model SocialLink {
+  id        String  @id @default(uuid()) @db.Uuid
+  /// "instagram" | "pinterest" | "tiktok" | "facebook" | "x" | "youtube" | "custom"
+  platform  String
+  /// Shown when platform = "custom"; ignored otherwise.
+  label     String?
+  url       String
+  sortOrder Int     @default(0)
+  visible   Boolean @default(true)
+
+  @@map("social_links")
+}
