@@ -95,3 +95,11 @@ export async function getVisibleSocialLinks() {
 export async function getAuthorProfile() {
   return prisma.author.findFirst();
 }
+
+/** The book to showcase on the homepage -- featured first, else most recently published. */
+export async function getFeaturedBook() {
+  return prisma.book.findFirst({
+    where: { status: "PUBLISHED", publishedAt: { lte: new Date() } },
+    orderBy: [{ featured: "desc" }, { publishedAt: "desc" }],
+  });
+}

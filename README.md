@@ -25,13 +25,15 @@ Open <http://localhost:3000> for the public site, or
 
 - **Public site** — home, `/blog`, `/journal`, `/quotes`, `/newsletter`,
   `/about`, `/privacy-policy`. Every listing page uses real pagination, not
-  an infinite scroll cap. The book (*Lessons That Matter*) is promoted from
-  the homepage and the About page directly out to its Amazon listing —
-  there's no separate book-launch page.
-- **Admin (`/bjsm-write`, behind Supabase Auth)** — a dashboard, a shared
-  editor for blog posts and journal entries (Tiptap, with image upload),
-  and CRUD screens for quotes, newsletter issues (file upload), social
-  links, and the author's own profile/bio.
+  an infinite scroll cap. The homepage's book showcase and "About the
+  Author" section are both pulled from the database, not hardcoded — see
+  below.
+- **Admin (`/bjsm-write`, behind Supabase Auth)** — a dashboard, and CRUD
+  screens for: books shown on the homepage (cover upload, buy link, which
+  one is featured), blog posts and journal entries (shared Tiptap editor,
+  with image upload), quotes, newsletter issues (file upload), social
+  links, and the author's own profile/bio (photo + bio, also what the
+  homepage's "About the Author" section shows).
 
 ## Structure
 
@@ -47,8 +49,8 @@ Open <http://localhost:3000> for the public site, or
 - `components/admin/` — admin forms and form controls
 - `lib/content.ts` — book/site copy that isn't in the database
 - `lib/queries.ts` — every public-facing "published only" database read
-- `prisma/schema.prisma` — `Post` (blog + journal), `Quote`, `Newsletter`,
-  `SocialLink`, `Author`
+- `prisma/schema.prisma` — `Book`, `Post` (blog + journal), `Quote`,
+  `Newsletter`, `SocialLink`, `Author`
 
 ## Notes
 

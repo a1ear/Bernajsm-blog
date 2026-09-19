@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/Button";
-import { BookCover } from "@/components/ui/BookCover";
 import { BotanicalMotif } from "@/components/ui/BotanicalMotif";
 import { Reveal, RevealGroup, RevealItem } from "@/components/ui/Reveal";
 import { PostCard } from "@/components/content/PostCard";
 import { QuoteCard } from "@/components/content/QuoteCard";
-import { getLatestPosts, getFeaturedQuote } from "@/lib/queries";
-import { site, hero, story } from "@/lib/content";
+import {
+  getLatestPosts,
+  getFeaturedQuote,
+  getFeaturedBook,
+  getAuthorProfile,
+} from "@/lib/queries";
+import { site, hero, author } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: `${site.authorHandle} — Essays, Journal & the Book`,
@@ -21,11 +26,21 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [latestBlog, latestJournal, featuredQuote] = await Promise.all([
+  const [latestBlog, latestJournal, featuredQuote, featuredBook, profile] = await Promise.all([
     getLatestPosts("BLOG", 3),
     getLatestPosts("JOURNAL", 3),
     getFeaturedQuote(),
+    getFeaturedBook(),
+    getAuthorProfile(),
   ]);
+
+  const authorName = profile?.name || site.authorName;
+  const authorBio = profile?.bio || author.bio;
+  const authorPhoto = profile?.photoUrl;
+  const authorInitials = authorName
+    .split(" ")
+    .map((w) => w[0])
+    .join("");
 
   return (
     <>
@@ -55,23 +70,42 @@ export default async function HomePage() {
               {hero.intro}
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
-              <Button href={site.amazonUrl} variant="primary">
-                Order the Book
-              </Button>
+              {featuredBook ? (
+                <Button href={featuredBook.buyUrl} variant="primary">
+                  Order the Book
+                </Button>
+              ) : null}
               <Button href="/blog" variant="secondary">
                 Read the Blog
               </Button>
             </div>
           </div>
 
-          <div className="mx-auto flex w-full max-w-sm flex-col items-center gap-5">
-            <div className="w-full rounded-2xl bg-warm-white p-5 shadow-[0_30px_60px_-25px_rgba(42,42,38,0.35)]">
-              <BookCover />
+          {featuredBook ? (
+            <div className="mx-auto flex w-full max-w-sm flex-col items-center gap-5">
+              <div className="w-full rounded-2xl bg-warm-white p-5 shadow-[0_30px_60px_-25px_rgba(42,42,38,0.35)]">
+                <div className="relative aspect-[2/3] w-full overflow-hidden rounded-[4px] bg-cream-alt">
+                  {featuredBook.coverImageUrl ? (
+                    <Image
+                      src={featuredBook.coverImageUrl}
+                      alt={featuredBook.coverImageAlt || `${featuredBook.title} book cover`}
+                      fill
+                      sizes="(max-width: 640px) 90vw, 320px"
+                      className="object-cover"
+                      priority
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center px-6 text-center font-display text-lg text-ink/30">
+                      {featuredBook.title}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <span className="rounded-full border border-ink/15 bg-warm-white px-5 py-2 text-xs uppercase tracking-[0.2em] text-ink-soft">
+                {featuredBook.availableLabel || "Available Now"}
+              </span>
             </div>
-            <span className="rounded-full border border-ink/15 bg-warm-white px-5 py-2 text-xs uppercase tracking-[0.2em] text-ink-soft">
-              {hero.availableTag}
-            </span>
-          </div>
+          ) : null}
         </div>
       </section>
 
@@ -80,29 +114,73 @@ export default async function HomePage() {
       </div>
 
       {/* Book teaser strip */}
-      <section className="bg-cream-alt py-24 sm:py-28">
-        <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 sm:px-10 lg:grid-cols-12">
-          <Reveal className="lg:col-span-5 flex justify-center lg:justify-start">
-            <div className="w-full max-w-sm rounded-xl bg-warm-white p-4 shadow-xl">
-              <BookCover />
-            </div>
+      {featuredBook ? (
+        <section className="bg-cream-alt py-24 sm:py-28">
+          <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 sm:px-10 lg:grid-cols-12">
+            <Reveal className="lg:col-span-5 flex justify-center lg:justify-start">
+              <div className="w-full max-w-sm rounded-xl bg-warm-white p-4 shadow-xl">
+                <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-cream-alt">
+                  {featuredBook.coverImageUrl ? (
+                    <Image
+                      src={featuredBook.coverImageUrl}
+                      alt={featuredBook.coverImageAlt || `${featuredBook.title} book cover`}
+                      fill
+                      sizes="(max-width: 1024px) 90vw, 380px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center px-6 text-center font-display text-lg text-ink/30">
+                      {featuredBook.title}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Reveal>
+            <Reveal delay={0.1} className="lg:col-span-7">
+              <p className="text-xs font-medium uppercase tracking-[0.25em] text-forest">The Memoir</p>
+              <h2 className="balance mt-2 font-display text-3xl font-bold leading-tight text-ink sm:text-4xl">
+                {featuredBook.heading || featuredBook.title}
+              </h2>
+              {featuredBook.description ? (
+                <p className="pretty mt-5 max-w-xl leading-relaxed text-ink-soft">{featuredBook.description}</p>
+              ) : null}
+              <Button href={featuredBook.buyUrl} variant="primary" className="mt-8">
+                Order the Book →
+              </Button>
+            </Reveal>
+          </div>
+        </section>
+      ) : null}
+
+      {/* About the Author */}
+      <section className="bg-cream px-6 py-24 sm:px-10">
+        <div className="mx-auto grid max-w-5xl items-center gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+          <Reveal className="mx-auto aspect-square w-full max-w-xs">
+            {authorPhoto ? (
+              <div className="relative h-full w-full overflow-hidden rounded-full shadow-[0_20px_40px_-20px_rgba(42,42,38,0.3)]">
+                <Image src={authorPhoto} alt={authorName} fill sizes="320px" className="object-cover" />
+              </div>
+            ) : (
+              <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-tan via-cream-alt to-forest/20 shadow-[0_20px_40px_-20px_rgba(42,42,38,0.3)]">
+                <span className="font-display text-6xl font-bold text-ink/20">{authorInitials}</span>
+              </div>
+            )}
           </Reveal>
-          <Reveal delay={0.1} className="lg:col-span-7">
-            <p className="text-xs font-medium uppercase tracking-[0.25em] text-forest">The Memoir</p>
-            <h2 className="balance mt-2 font-display text-3xl font-bold leading-tight text-ink sm:text-4xl">
-              {story.heading}
-            </h2>
-            <p className="pretty mt-5 max-w-xl leading-relaxed text-ink-soft">{story.body[0]}</p>
-            <Button href={site.amazonUrl} variant="primary" className="mt-8">
-              Order the Book →
-            </Button>
+          <Reveal delay={0.1}>
+            <p className="text-xs font-medium uppercase tracking-[0.25em] text-forest">About the Author</p>
+            <h2 className="mt-2 font-display text-3xl font-bold text-ink sm:text-4xl">{authorName}</h2>
+            <p className="mt-1 font-accent text-lg italic text-ink-soft">{author.subheading}</p>
+            <p className="pretty mt-5 max-w-xl leading-relaxed text-ink-soft line-clamp-4">{authorBio}</p>
+            <Link href="/about" className="mt-6 inline-block text-sm font-medium text-forest hover:text-forest-dark">
+              Read more about me →
+            </Link>
           </Reveal>
         </div>
       </section>
 
       {/* Featured quote */}
       {featuredQuote ? (
-        <section className="bg-cream px-6 py-20 sm:px-10">
+        <section className="bg-cream-alt px-6 py-20 sm:px-10">
           <Reveal className="mx-auto max-w-4xl">
             <QuoteCard quote={featuredQuote} />
           </Reveal>
@@ -110,7 +188,7 @@ export default async function HomePage() {
       ) : null}
 
       {/* Latest from the Blog */}
-      <section className="bg-cream px-6 pb-20 sm:px-10">
+      <section className="bg-cream px-6 py-20 sm:px-10">
         <div className="mx-auto max-w-6xl">
           <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
             <div>

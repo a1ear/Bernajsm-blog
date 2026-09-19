@@ -103,6 +103,32 @@ model Newsletter {
   @@map("newsletters")
 }
 
+/// A book to showcase on the homepage (cover, buy link, teaser copy). Not
+/// limited to one row -- the author can add a second book later. Which one
+/// actually shows on the homepage is decided in lib/queries.ts:
+/// featured first, else the most recently published.
+model Book {
+  id             String        @id @default(uuid()) @db.Uuid
+  title          String
+  /// Short question/hook shown in the homepage teaser section.
+  heading        String?
+  /// Longer narrative paragraph, teaser section body.
+  description    String?
+  coverImageUrl  String?
+  coverImageAlt  String?
+  buyUrl         String
+  /// e.g. "Available Now", "Coming Soon". Falls back to "Available Now" if empty.
+  availableLabel String?
+  featured       Boolean       @default(false)
+  status         ContentStatus @default(DRAFT)
+  publishedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([status, featured, publishedAt])
+  @@map("books")
+}
+
 model SocialLink {
   id        String  @id @default(uuid()) @db.Uuid
   /// "instagram" | "pinterest" | "tiktok" | "facebook" | "x" | "youtube" | "custom"

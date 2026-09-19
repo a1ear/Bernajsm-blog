@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { getFeaturedBook } from "@/lib/queries";
 
 /**
  * Every page under this layout reads from Postgres (the Footer alone queries
@@ -11,10 +12,12 @@ import { Footer } from "@/components/layout/Footer";
  */
 export const dynamic = "force-dynamic";
 
-export default function SiteLayout({ children }: { children: React.ReactNode }) {
+export default async function SiteLayout({ children }: { children: React.ReactNode }) {
+  const featuredBook = await getFeaturedBook();
+
   return (
     <>
-      <Navbar />
+      <Navbar buyUrl={featuredBook?.buyUrl} />
       <main className="flex-1">{children}</main>
       <Footer />
     </>

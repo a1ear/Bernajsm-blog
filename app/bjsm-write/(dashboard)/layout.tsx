@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/bjsm-write" },
+  { label: "Books", href: "/bjsm-write/books" },
   { label: "Posts & Journal", href: "/bjsm-write/posts" },
   { label: "Quotes", href: "/bjsm-write/quotes" },
   { label: "Newsletters", href: "/bjsm-write/newsletters" },

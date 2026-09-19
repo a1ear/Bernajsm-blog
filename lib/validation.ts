@@ -73,6 +73,19 @@ export const socialLinkSchema = z.object({
 });
 export type SocialLinkInput = z.infer<typeof socialLinkSchema>;
 
+export const bookSchema = z.object({
+  title: z.string().trim().min(1, "Title is required.").max(200),
+  heading: z.string().trim().max(200).optional().or(z.literal("")),
+  description: z.string().trim().max(1000).optional().or(z.literal("")),
+  coverImageUrl: z.string().trim().max(2000).optional().or(z.literal("")),
+  coverImageAlt: z.string().trim().max(300).optional().or(z.literal("")),
+  buyUrl: z.url("Enter a full URL, including https://"),
+  availableLabel: z.string().trim().max(60).optional().or(z.literal("")),
+  featured: z.coerce.boolean().default(false),
+  status: contentStatusSchema,
+});
+export type BookInput = z.infer<typeof bookSchema>;
+
 export const authorProfileSchema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(200),
   handle: z.string().trim().max(100).optional().or(z.literal("")),

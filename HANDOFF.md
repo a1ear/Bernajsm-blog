@@ -50,6 +50,31 @@ local Supabase stack during development, and now for real:
      `process.env.DIRECT_URL` directly instead, verified by running
      `prisma generate` with `.env.local` removed entirely.
 
+## The Book model (added after initial launch)
+
+The homepage's book showcase (hero cover card, teaser strip, the Navbar's
+"Order Now" button, and the About page's "Order the Book" link) is no
+longer hardcoded — it's a `Book` row in the database, editable at
+`/bjsm-write/books`. `lib/queries.ts`'s `getFeaturedBook()` picks whichever
+book has `featured: true`, falling back to the most recently published one;
+the admin form enforces "only one featured at a time" by un-featuring every
+other book when you check the box on one (see `clearOtherFeatured()` in
+`app/bjsm-write/(dashboard)/books/actions.ts`). `site.amazonUrl` in
+`lib/content.ts` is now only a fallback for the (unlikely) state where no
+book has been added yet.
+
+The real "Lessons That Matter" book was seeded into production directly
+(its cover image re-uploaded to the `media` bucket, then one `Book` row
+inserted via a one-off script) so the live site didn't go blank the moment
+this shipped — it isn't sitting in a migration or seed file anywhere, so if
+this database is ever recreated from scratch, that one row needs to be
+re-added by hand (or through the admin UI, which is the normal path).
+
+A homepage "About the Author" section was also added back (it previously
+only existed on the now-removed `/book` page), reusing the existing
+`Author` table and `/bjsm-write/profile` editor — no new admin surface was
+needed for that part, just a new place on the homepage to display it.
+
 ## The wrong-Supabase-project incident — read this before touching env vars
 
 Mid-setup, the user pasted real Supabase credentials twice. The first set

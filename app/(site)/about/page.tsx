@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
-import { getAuthorProfile } from "@/lib/queries";
+import { getAuthorProfile, getFeaturedBook } from "@/lib/queries";
 import { author, site } from "@/lib/content";
 
 export const metadata: Metadata = {
@@ -20,7 +20,7 @@ function CheckIcon() {
 }
 
 export default async function AboutPage() {
-  const profile = await getAuthorProfile();
+  const [profile, featuredBook] = await Promise.all([getAuthorProfile(), getFeaturedBook()]);
   const name = profile?.name || site.authorName;
   const bio = profile?.bio || author.bio;
   const photoUrl = profile?.photoUrl;
@@ -70,7 +70,7 @@ export default async function AboutPage() {
           </div>
 
           <Link
-            href={site.amazonUrl}
+            href={featuredBook?.buyUrl || site.amazonUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-8 inline-block text-sm text-forest underline decoration-forest/40 decoration-2 underline-offset-4"

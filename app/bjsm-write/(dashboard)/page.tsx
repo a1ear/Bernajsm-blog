@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const [blogCount, journalCount, quoteCount, newsletterCount, draftCount] = await Promise.all([
+  const [bookCount, blogCount, journalCount, quoteCount, newsletterCount, draftCount] = await Promise.all([
+    prisma.book.count(),
     prisma.post.count({ where: { type: "BLOG" } }),
     prisma.post.count({ where: { type: "JOURNAL" } }),
     prisma.quote.count(),
@@ -14,6 +15,7 @@ export default async function AdminDashboardPage() {
   ]);
 
   const cards = [
+    { label: "Books", count: bookCount, href: "/bjsm-write/books" },
     { label: "Blog posts", count: blogCount, href: "/bjsm-write/posts?type=BLOG" },
     { label: "Journal entries", count: journalCount, href: "/bjsm-write/posts?type=JOURNAL" },
     { label: "Quotes", count: quoteCount, href: "/bjsm-write/quotes" },
@@ -21,6 +23,7 @@ export default async function AdminDashboardPage() {
   ];
 
   const shortcuts = [
+    { label: "New Book", href: "/bjsm-write/books/new" },
     { label: "New Post", href: "/bjsm-write/posts/new" },
     { label: "New Quote", href: "/bjsm-write/quotes/new" },
     { label: "New Newsletter Issue", href: "/bjsm-write/newsletters/new" },
